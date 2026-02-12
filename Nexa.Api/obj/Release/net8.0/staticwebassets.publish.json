@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "yDc0ts2x8ikXQqPStYTnX6LcWHyrEdM4W+nAzofC9/0=",
+  "Source": "Nexa.Api",
+  "BasePath": "_content/Nexa.Api",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
