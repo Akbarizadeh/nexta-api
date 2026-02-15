@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 using Nexa.Api.Models;
@@ -12,12 +11,10 @@ namespace Nexa.Api.Controllers;
 public class ListingsController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public ListingsController(NexaDbContext db, GeometryFactory geometryFactory)
+    public ListingsController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpGet]
@@ -38,22 +35,34 @@ public class ListingsController : ControllerBase
         if (request.MaxPrice.HasValue)
             query = query.Where(l => l.PriceMin <= request.MaxPrice.Value);
 
+        var listings = await query.ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
         if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
-            var userLocation = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
-            var radiusMeters = (request.RadiusKm ?? 10) * 1000;
+            var radiusKm = request.RadiusKm ?? 10;
+            var filteredListings = listings
+                .Where(l => l.Latitude.HasValue && l.Longitude.HasValue)
+                .Select(l => new
+                {
+                    Listing = l,
+                    Distance = CalculateDistance(
+                        request.Latitude.Value, request.Longitude.Value,
+                        l.Latitude.Value, l.Longitude.Value)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Distance)
+                .Select(x => x.Listing)
+                .ToList();
 
-            query = query
-                .Where(l => l.Location != null && l.Location.IsWithinDistance(userLocation, radiusMeters))
-                .OrderBy(l => l.Location!.Distance(userLocation));
+            listings = filteredListings;
         }
         else
         {
-            query = query.OrderByDescending(l => l.CreatedAt);
+            listings = listings.OrderByDescending(l => l.CreatedAt).ToList();
         }
 
-        var listings = await query
+        var result = listings
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(l => new ListingResponse(
@@ -62,13 +71,12 @@ public class ListingsController : ControllerBase
                 l.Title, l.Description, l.Category, l.Tags, l.ImageUrls,
                 l.PriceMin, l.PriceMax, l.Price,
                 l.Type.ToString(), l.Status.ToString(),
-                l.Location != null ? l.Location.Y : null,
-                l.Location != null ? l.Location.X : null,
+                l.Latitude, l.Longitude,
                 l.AiConfidenceScore, l.ViewCount, l.LikeCount, l.SaveCount, l.CreatedAt
             ))
-            .ToListAsync();
+            .ToList();
 
-        return Ok(listings);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -90,18 +98,18 @@ public class ListingsController : ControllerBase
             l.Title, l.Description, l.Category, l.Tags, l.ImageUrls,
             l.PriceMin, l.PriceMax, l.Price,
             l.Type.ToString(), l.Status.ToString(),
-            l.Location?.Y, l.Location?.X,
+            l.Latitude, l.Longitude,
             l.AiConfidenceScore, l.ViewCount, l.LikeCount, l.SaveCount, l.CreatedAt
         ));
     }
 
     [HttpPost]
-    public async Task<ActionResult<ListingResponse>> CreateListing(CreateListingRequest request)
+    public async Task<ActionResult<ListingResponse>> CreateListing([FromBody] CreateListingRequest request)
     {
         var listing = new Listing
         {
             Id = Guid.NewGuid(),
-            SellerId = Guid.NewGuid(), // TODO: get from auth
+            SellerId = Guid.Parse("11111111-1111-1111-1111-111111111111"), // Test Seller 1  
             Title = request.Title,
             Description = request.Description,
             Category = request.Category,
@@ -111,14 +119,10 @@ public class ListingsController : ControllerBase
             PriceMin = request.PriceMin,
             PriceMax = request.PriceMax,
             Type = Enum.Parse<ListingType>(request.Type, true),
-            Status = ListingStatus.Active
+            Status = ListingStatus.Active,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude
         };
-
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
-        {
-            listing.Location = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
-        }
 
         _db.Listings.Add(listing);
         await _db.SaveChangesAsync();
@@ -130,7 +134,7 @@ public class ListingsController : ControllerBase
                 listing.Title, listing.Description, listing.Category, listing.Tags, listing.ImageUrls,
                 listing.PriceMin, listing.PriceMax, listing.Price,
                 listing.Type.ToString(), listing.Status.ToString(),
-                listing.Location?.Y, listing.Location?.X,
+                listing.Latitude, listing.Longitude,
                 listing.AiConfidenceScore, listing.ViewCount, listing.LikeCount, listing.SaveCount,
                 listing.CreatedAt
             ));
@@ -167,5 +171,17 @@ public class ListingsController : ControllerBase
         await _db.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        var R = 6371; // Earth radius in km  
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
     }
 }

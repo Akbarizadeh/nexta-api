@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 using Nexa.Api.Models;
@@ -12,12 +11,10 @@ namespace Nexa.Api.Controllers;
 public class EventsController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public EventsController(NexaDbContext db, GeometryFactory geometryFactory)
+    public EventsController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpGet]
@@ -37,36 +34,43 @@ public class EventsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(category))
             query = query.Where(e => e.Category == category);
 
+        var events = await query.OrderBy(e => e.StartDate).ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
         if (latitude.HasValue && longitude.HasValue)
         {
-            var userLocation = _geometryFactory.CreatePoint(
-                new Coordinate(longitude.Value, latitude.Value));
-            var radiusMeters = (radiusKm ?? 10) * 1000;
+            var radius = radiusKm ?? 10;
+            var filteredEvents = events
+                .Where(e => e.Latitude.HasValue && e.Longitude.HasValue)
+                .Select(e => new
+                {
+                    Event = e,
+                    Distance = CalculateDistance(
+                        latitude.Value, longitude.Value,
+                        e.Latitude.Value, e.Longitude.Value)
+                })
+                .Where(x => x.Distance <= radius)
+                .OrderBy(x => x.Event.StartDate)
+                .Select(x => x.Event)
+                .ToList();
 
-            query = query
-                .Where(e => e.Location != null && e.Location.IsWithinDistance(userLocation, radiusMeters))
-                .OrderBy(e => e.StartDate);
-        }
-        else
-        {
-            query = query.OrderBy(e => e.StartDate);
+            events = filteredEvents;
         }
 
-        var events = await query
+        var result = events
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(e => new EventResponse(
                 e.Id, e.BusinessId, e.Business.Name,
                 e.Title, e.Description, e.Category, e.Tags, e.ImageUrl,
-                e.Address, e.Location != null ? e.Location.Y : null,
-                e.Location != null ? e.Location.X : null,
+                e.Address, e.Latitude, e.Longitude,
                 e.StartDate, e.EndDate, e.Price, e.IsFree,
                 e.MaxAttendees, e.AttendeeCount, e.ViewCount,
                 e.LikeCount, e.SaveCount, e.CreatedAt
             ))
-            .ToListAsync();
+            .ToList();
 
-        return Ok(events);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -84,7 +88,7 @@ public class EventsController : ControllerBase
         return Ok(new EventResponse(
             e.Id, e.BusinessId, e.Business.Name,
             e.Title, e.Description, e.Category, e.Tags, e.ImageUrl,
-            e.Address, e.Location?.Y, e.Location?.X,
+            e.Address, e.Latitude, e.Longitude,
             e.StartDate, e.EndDate, e.Price, e.IsFree,
             e.MaxAttendees, e.AttendeeCount, e.ViewCount,
             e.LikeCount, e.SaveCount, e.CreatedAt
@@ -97,7 +101,7 @@ public class EventsController : ControllerBase
         var ev = new Event
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(), // TODO: get from auth
+            BusinessId = Guid.NewGuid(), // TODO: get from auth  
             Title = request.Title,
             Description = request.Description,
             Category = request.Category,
@@ -108,14 +112,10 @@ public class EventsController : ControllerBase
             EndDate = request.EndDate,
             Price = request.Price,
             IsFree = request.IsFree,
-            MaxAttendees = request.MaxAttendees
+            MaxAttendees = request.MaxAttendees,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude
         };
-
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
-        {
-            ev.Location = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
-        }
 
         _db.Events.Add(ev);
         await _db.SaveChangesAsync();
@@ -124,10 +124,22 @@ public class EventsController : ControllerBase
             new EventResponse(
                 ev.Id, ev.BusinessId, "Business",
                 ev.Title, ev.Description, ev.Category, ev.Tags, ev.ImageUrl,
-                ev.Address, ev.Location?.Y, ev.Location?.X,
+                ev.Address, ev.Latitude, ev.Longitude,
                 ev.StartDate, ev.EndDate, ev.Price, ev.IsFree,
                 ev.MaxAttendees, ev.AttendeeCount, ev.ViewCount,
                 ev.LikeCount, ev.SaveCount, ev.CreatedAt
             ));
+    }
+
+    private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        var R = 6371; // Earth radius in km  
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
     }
 }

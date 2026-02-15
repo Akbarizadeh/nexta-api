@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 using Nexa.Api.Models;
@@ -12,12 +11,10 @@ namespace Nexa.Api.Controllers;
 public class BusinessController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public BusinessController(NexaDbContext db, GeometryFactory geometryFactory)
+    public BusinessController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpGet]
@@ -36,28 +33,47 @@ public class BusinessController : ControllerBase
         if (!string.IsNullOrWhiteSpace(category))
             query = query.Where(b => b.Category == category);
 
+        var businesses = await query.ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
         if (latitude.HasValue && longitude.HasValue)
         {
-            var userLocation = _geometryFactory.CreatePoint(
-                new Coordinate(longitude.Value, latitude.Value));
-            var radiusMeters = (radiusKm ?? 10) * 1000;
+             radiusKm = radiusKm ?? 10;
+            var filteredBusinesses = businesses
+                .Where(b => b.Latitude.HasValue && b.Longitude.HasValue)
+                .Select(b => new
+                {
+                    Business = b,
+                    Distance = CalculateDistance(
+                        latitude.Value, longitude.Value,
+                        b.Latitude!.Value!, b.Longitude!.Value)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Distance)
+                .Select(x => new BusinessResponse(
+                    x.Business.Id, x.Business.UserId, x.Business.Name, x.Business.Description,
+                    x.Business.LogoUrl, x.Business.CoverImageUrl, x.Business.Phone,
+                    x.Business.Website, x.Business.Address,
+                    x.Business.Latitude, x.Business.Longitude,
+                    x.Business.Category, x.Business.IsVerified, x.Business.CreatedAt,
+                    x.Business.Events.Count, x.Business.Listings.Count, x.Business.Offers.Count
+                ))
+                .ToList();
 
-            query = query
-                .Where(b => b.Location != null && b.Location.IsWithinDistance(userLocation, radiusMeters));
+            return Ok(filteredBusinesses);
         }
 
-        var businesses = await query
+        var response = businesses
             .Select(b => new BusinessResponse(
                 b.Id, b.UserId, b.Name, b.Description,
                 b.LogoUrl, b.CoverImageUrl, b.Phone, b.Website, b.Address,
-                b.Location != null ? b.Location.Y : null,
-                b.Location != null ? b.Location.X : null,
+                b.Latitude, b.Longitude,
                 b.Category, b.IsVerified, b.CreatedAt,
                 b.Events.Count, b.Listings.Count, b.Offers.Count
             ))
-            .ToListAsync();
+            .ToList();
 
-        return Ok(businesses);
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
@@ -74,7 +90,7 @@ public class BusinessController : ControllerBase
         return Ok(new BusinessResponse(
             b.Id, b.UserId, b.Name, b.Description,
             b.LogoUrl, b.CoverImageUrl, b.Phone, b.Website, b.Address,
-            b.Location?.Y, b.Location?.X,
+            b.Latitude, b.Longitude,
             b.Category, b.IsVerified, b.CreatedAt,
             b.Events.Count, b.Listings.Count, b.Offers.Count
         ));
@@ -86,20 +102,16 @@ public class BusinessController : ControllerBase
         var business = new Business
         {
             Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(), // TODO: get from auth
+            UserId = Guid.NewGuid(), // TODO: get from auth  
             Name = request.Name,
             Description = request.Description,
             Phone = request.Phone,
             Website = request.Website,
             Address = request.Address,
-            Category = request.Category
+            Category = request.Category,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude
         };
-
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
-        {
-            business.Location = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
-        }
 
         _db.Businesses.Add(business);
         await _db.SaveChangesAsync();
@@ -108,7 +120,7 @@ public class BusinessController : ControllerBase
             new BusinessResponse(
                 business.Id, business.UserId, business.Name, business.Description,
                 business.LogoUrl, business.CoverImageUrl, business.Phone, business.Website, business.Address,
-                business.Location?.Y, business.Location?.X,
+                business.Latitude, business.Longitude,
                 business.Category, business.IsVerified, business.CreatedAt,
                 0, 0, 0
             ));
@@ -134,5 +146,17 @@ public class BusinessController : ControllerBase
             business.Events.Count,
             business.Offers.Count
         ));
+    }
+
+    private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        var R = 6371; // Earth radius in km  
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
     }
 }

@@ -1250,15 +1250,21 @@
           },
           "priceMin": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "priceMax": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "confidenceScore": {
             "type": "number",
             "format": "double"
+          },
+          "interpretedIntent": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1609,11 +1615,13 @@
           },
           "priceMin": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "priceMax": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "type": {
             "type": "string",
@@ -1982,11 +1990,13 @@
           },
           "priceMin": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "priceMax": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           },
           "price": {
             "type": "number",

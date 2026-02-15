@@ -1,5 +1,31 @@
-namespace Nexa.Api.DTOs;
+﻿namespace Nexa.Api.DTOs;
 
+public class AiVisionResult
+{
+    public string InterpretedIntent { get; set; }
+    public string SuggestedCategory { get; set; }
+    public PriceRange PriceRange { get; set; }
+    public List<string> Keywords { get; set; }
+    public List<AiListingDraft> ListingDrafts { get; set; }
+}
+
+public class PriceRange
+{
+    public decimal? Min { get; set; }
+    public decimal? Max { get; set; }
+}
+
+public class AiListingDraft
+{
+
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public string Category { get; set; }
+    public List<string> Tags { get; set; }
+    public decimal PriceMin { get; set; }
+    public decimal PriceMax { get; set; }
+    public double ConfidenceScore { get; set; }
+}
 public record AiListingFromImageRequest(
     string ImageBase64
 );
@@ -9,9 +35,10 @@ public record AiListingFromImageResponse(
     string Description,
     string Category,
     List<string> Tags,
-    decimal PriceMin,
-    decimal PriceMax,
-    double ConfidenceScore
+    decimal? PriceMin,
+    decimal? PriceMax,
+    double ConfidenceScore,
+    string InterpretedIntent   // 👈 خیلی مهم و کاربردی
 );
 
 public record AiRecommendRequest(

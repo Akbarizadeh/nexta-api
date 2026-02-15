@@ -1,5 +1,3 @@
-using NetTopologySuite.Geometries;
-
 namespace Nexa.Api.Models;
 
 public class User
@@ -9,7 +7,8 @@ public class User
     public string DisplayName { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public UserRole Role { get; set; } = UserRole.Normal;
-    public Point? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public List<string> Interests { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

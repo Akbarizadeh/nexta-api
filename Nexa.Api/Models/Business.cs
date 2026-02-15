@@ -1,5 +1,3 @@
-using NetTopologySuite.Geometries;
-
 namespace Nexa.Api.Models;
 
 public class Business
@@ -13,7 +11,8 @@ public class Business
     public string? Phone { get; set; }
     public string? Website { get; set; }
     public string? Address { get; set; }
-    public Point? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public string? Category { get; set; }
     public bool IsVerified { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

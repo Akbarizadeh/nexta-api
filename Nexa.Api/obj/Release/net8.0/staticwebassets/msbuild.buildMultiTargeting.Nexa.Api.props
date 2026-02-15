@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\Nexa.Api.props" />
-</Project>

@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.Services;
 
@@ -18,11 +16,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<NexaDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection") ??
-        "Host=localhost;Database=nexa;Username=postgres;Password=postgres",
-        npgsql => npgsql.UseNetTopologySuite()
+        "Host=localhost;Database=nexa;Username=postgres;Password=postgres"
     ));
-
-builder.Services.AddSingleton(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326));
 
 builder.Services.AddScoped<IAiService, AiService>();
 

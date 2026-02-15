@@ -1,5 +1,3 @@
-using NetTopologySuite.Geometries;
-
 namespace Nexa.Api.Models;
 
 public class Listing
@@ -12,12 +10,13 @@ public class Listing
     public string Category { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
     public List<string> ImageUrls { get; set; } = new();
-    public decimal PriceMin { get; set; }
-    public decimal PriceMax { get; set; }
+    public decimal? PriceMin { get; set; }
+    public decimal? PriceMax { get; set; }
     public decimal? Price { get; set; }
     public ListingType Type { get; set; } = ListingType.Product;
     public ListingStatus Status { get; set; } = ListingStatus.Active;
-    public Point? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public double? AiConfidenceScore { get; set; }
     public int ViewCount { get; set; }
     public int LikeCount { get; set; }

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 using Nexa.Api.Models;
@@ -12,12 +11,10 @@ namespace Nexa.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public UsersController(NexaDbContext db, GeometryFactory geometryFactory)
+    public UsersController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpPost]
@@ -33,8 +30,8 @@ public class UsersController : ControllerBase
 
         if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
-            user.Location = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
+            user.Latitude = request.Latitude.Value;
+            user.Longitude = request.Longitude.Value;
         }
 
         _db.Users.Add(user);
@@ -58,7 +55,7 @@ public class UsersController : ControllerBase
     [HttpPost("interactions")]
     public async Task<ActionResult> AddInteraction(InteractionRequest request)
     {
-        var userId = Guid.NewGuid(); // TODO: get from auth
+        var userId = Guid.NewGuid(); // TODO: get from auth  
 
         var interaction = new UserInteraction
         {

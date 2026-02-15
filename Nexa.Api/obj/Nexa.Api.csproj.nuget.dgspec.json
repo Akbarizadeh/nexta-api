@@ -1,22 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\backend\\Nexa.Api\\Nexa.Api.csproj": {}
+    "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Nexa.Api.csproj": {}
   },
   "projects": {
-    "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\backend\\Nexa.Api\\Nexa.Api.csproj": {
+    "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Nexa.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\backend\\Nexa.Api\\Nexa.Api.csproj",
+        "projectUniqueName": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Nexa.Api.csproj",
         "projectName": "Nexa.Api",
-        "projectPath": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\backend\\Nexa.Api\\Nexa.Api.csproj",
+        "projectPath": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Nexa.Api.csproj",
         "packagesPath": "C:\\Users\\akbar\\.nuget\\packages\\",
-        "outputPath": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\backend\\Nexa.Api\\obj\\",
+        "outputPath": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "d:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
+          "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\NuGet.Config",
           "C:\\Users\\akbar\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -75,6 +76,10 @@
             "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": {
               "target": "Package",
               "version": "[8.0.0, )"
+            },
+            "OpenAI": {
+              "target": "Package",
+              "version": "[2.8.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

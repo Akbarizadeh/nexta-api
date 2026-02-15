@@ -1,5 +1,3 @@
-using NetTopologySuite.Geometries;
-
 namespace Nexa.Api.Models;
 
 public class Event
@@ -12,7 +10,8 @@ public class Event
     public List<string> Tags { get; set; } = new();
     public string? ImageUrl { get; set; }
     public string? Address { get; set; }
-    public Point? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public decimal? Price { get; set; }

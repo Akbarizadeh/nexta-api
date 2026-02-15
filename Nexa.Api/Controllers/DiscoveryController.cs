@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 
@@ -11,95 +10,157 @@ namespace Nexa.Api.Controllers;
 public class DiscoveryController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public DiscoveryController(NexaDbContext db, GeometryFactory geometryFactory)
+    public DiscoveryController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpGet]
     public async Task<ActionResult<DiscoveryResponse>> Discover([FromQuery] DiscoveryRequest request)
     {
         var items = new List<DiscoveryItem>();
-        Point? userLocation = null;
+        var radiusKm = request.RadiusKm ?? 10;
 
-        if (request.Latitude != 0 && request.Longitude != 0)
-        {
-            userLocation = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude, request.Latitude));
-        }
-
-        var radiusMeters = (request.RadiusKm ?? 10) * 1000;
-
+        // Get all listings  
         var listings = await _db.Listings
             .Include(l => l.Business)
             .Where(l => l.Status == Models.ListingStatus.Active)
             .Where(l => string.IsNullOrEmpty(request.Category) || l.Category == request.Category)
-            .Where(l => userLocation == null || (l.Location != null && l.Location.IsWithinDistance(userLocation, radiusMeters)))
             .OrderByDescending(l => l.CreatedAt)
-            .Take(request.PageSize)
             .ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
+        if (request.Latitude != 0 && request.Longitude != 0)
+        {
+            var filteredListings = listings
+                .Where(l => (l.Latitude == null || l.Longitude == null) || l.Latitude.HasValue && l.Longitude.HasValue)
+                .Select(l => new
+                {
+                    Listing = l,
+                    //Distance = CalculateDistance(
+                    //    request.Latitude, request.Longitude,
+                    //  l.Longitude == null ? 0 : l.Latitude!.Value, l.Longitude == null ? 0 : l.Longitude.Value)
+                })
+                //.Where(x => 1 ==1 || x.Distance <= radiusKm)
+                //.OrderBy(x => x.Distance)
+                .Take(request.PageSize)
+                .Select(x => x.Listing)
+                .ToList();
+
+            listings = filteredListings;
+        }
+        else
+        {
+            listings = listings.Take(request.PageSize).ToList();
+        }
 
         foreach (var l in listings)
         {
-            var dist = userLocation != null && l.Location != null
-                ? l.Location.Distance(userLocation) / 1000.0
+            var dist = (request.Latitude != 0 && request.Longitude != 0 && l.Latitude.HasValue && l.Longitude.HasValue)
+                ? CalculateDistance(request.Latitude, request.Longitude, l.Latitude.Value, l.Longitude.Value)
                 : 0;
 
             items.Add(new DiscoveryItem(
                 "Listing", l.Id, l.Title, l.Description,
                 l.ImageUrls.FirstOrDefault(), l.Category,
-                l.Location?.Y, l.Location?.X, dist,
+                l.Latitude, l.Longitude, dist,
                 l.Price ?? l.PriceMin, l.LikeCount, l.SaveCount,
                 l.CreatedAt, l.Business?.Name
             ));
         }
 
+        // Get all events  
         var events = await _db.Events
             .Include(e => e.Business)
             .Where(e => e.EndDate == null || e.EndDate > DateTime.UtcNow)
             .Where(e => string.IsNullOrEmpty(request.Category) || e.Category == request.Category)
-            .Where(e => userLocation == null || (e.Location != null && e.Location.IsWithinDistance(userLocation, radiusMeters)))
             .OrderBy(e => e.StartDate)
-            .Take(request.PageSize)
             .ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
+        if (request.Latitude != 0 && request.Longitude != 0)
+        {
+            var filteredEvents = events
+                .Where(e => e.Latitude.HasValue && e.Longitude.HasValue)
+                .Select(e => new
+                {
+                    Event = e,
+                    Distance = CalculateDistance(
+                        request.Latitude, request.Longitude,
+                        e.Latitude.Value, e.Longitude.Value)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Event.StartDate)
+                .Take(request.PageSize)
+                .Select(x => x.Event)
+                .ToList();
+
+            events = filteredEvents;
+        }
+        else
+        {
+            events = events.Take(request.PageSize).ToList();
+        }
 
         foreach (var e in events)
         {
-            var dist = userLocation != null && e.Location != null
-                ? e.Location.Distance(userLocation) / 1000.0
+            var dist = (request.Latitude != 0 && request.Longitude != 0 && e.Latitude.HasValue && e.Longitude.HasValue)
+                ? CalculateDistance(request.Latitude, request.Longitude, e.Latitude.Value, e.Longitude.Value)
                 : 0;
 
             items.Add(new DiscoveryItem(
                 "Event", e.Id, e.Title, e.Description,
                 e.ImageUrl, e.Category,
-                e.Location?.Y, e.Location?.X, dist,
+                e.Latitude, e.Longitude, dist,
                 e.Price, e.LikeCount, e.SaveCount,
                 e.CreatedAt, e.Business.Name
             ));
         }
 
+        // Get all offers  
         var offers = await _db.Offers
             .Include(o => o.Business)
             .Where(o => o.EndDate > DateTime.UtcNow)
             .Where(o => string.IsNullOrEmpty(request.Category) || o.Category == request.Category)
-            .Where(o => userLocation == null || (o.Location != null && o.Location.IsWithinDistance(userLocation, radiusMeters)))
             .OrderBy(o => o.EndDate)
-            .Take(request.PageSize)
             .ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
+        if (request.Latitude != 0 && request.Longitude != 0)
+        {
+            var filteredOffers = offers
+                .Where(o => o.Latitude.HasValue && o.Longitude.HasValue)
+                .Select(o => new
+                {
+                    Offer = o,
+                    Distance = CalculateDistance(
+                        request.Latitude, request.Longitude,
+                        o.Latitude.Value, o.Longitude.Value)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Offer.EndDate)
+                .Take(request.PageSize)
+                .Select(x => x.Offer)
+                .ToList();
+
+            offers = filteredOffers;
+        }
+        else
+        {
+            offers = offers.Take(request.PageSize).ToList();
+        }
 
         foreach (var o in offers)
         {
-            var dist = userLocation != null && o.Location != null
-                ? o.Location.Distance(userLocation) / 1000.0
+            var dist = (request.Latitude != 0 && request.Longitude != 0 && o.Latitude.HasValue && o.Longitude.HasValue)
+                ? CalculateDistance(request.Latitude, request.Longitude, o.Latitude.Value, o.Longitude.Value)
                 : 0;
 
             items.Add(new DiscoveryItem(
                 "Offer", o.Id, o.Title, o.Description,
                 o.ImageUrl, o.Category,
-                o.Location?.Y, o.Location?.X, dist,
+                o.Latitude, o.Longitude, dist,
                 o.DiscountedPrice, o.LikeCount, o.SaveCount,
                 o.CreatedAt, o.Business.Name
             ));
@@ -118,5 +179,17 @@ public class DiscoveryController : ControllerBase
             .ToList();
 
         return Ok(new DiscoveryResponse(paged, sorted.Count, request.Page, request.PageSize));
+    }
+
+    private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        var R = 6371; // Earth radius in km  
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
     }
 }

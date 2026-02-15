@@ -1,5 +1,3 @@
-using NetTopologySuite.Geometries;
-
 namespace Nexa.Api.Models;
 
 public class Offer
@@ -14,7 +12,8 @@ public class Offer
     public decimal? OriginalPrice { get; set; }
     public decimal? DiscountedPrice { get; set; }
     public int? DiscountPercent { get; set; }
-    public Point? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int ViewCount { get; set; }

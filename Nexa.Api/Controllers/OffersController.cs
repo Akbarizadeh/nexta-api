@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Nexa.Api.Data;
 using Nexa.Api.DTOs;
 using Nexa.Api.Models;
@@ -12,12 +11,10 @@ namespace Nexa.Api.Controllers;
 public class OffersController : ControllerBase
 {
     private readonly NexaDbContext _db;
-    private readonly GeometryFactory _geometryFactory;
 
-    public OffersController(NexaDbContext db, GeometryFactory geometryFactory)
+    public OffersController(NexaDbContext db)
     {
         _db = db;
-        _geometryFactory = geometryFactory;
     }
 
     [HttpGet]
@@ -37,36 +34,43 @@ public class OffersController : ControllerBase
         if (!string.IsNullOrWhiteSpace(category))
             query = query.Where(o => o.Category == category);
 
+        var offers = await query.OrderBy(o => o.EndDate).ToListAsync();
+
+        // Apply distance filtering in memory if location provided  
         if (latitude.HasValue && longitude.HasValue)
         {
-            var userLocation = _geometryFactory.CreatePoint(
-                new Coordinate(longitude.Value, latitude.Value));
-            var radiusMeters = (radiusKm ?? 10) * 1000;
+            var radius = radiusKm ?? 10;
+            var filteredOffers = offers
+                .Where(o => o.Latitude.HasValue && o.Longitude.HasValue)
+                .Select(o => new
+                {
+                    Offer = o,
+                    Distance = CalculateDistance(
+                        latitude.Value, longitude.Value,
+                        o.Latitude.Value, o.Longitude.Value)
+                })
+                .Where(x => x.Distance <= radius)
+                .OrderBy(x => x.Offer.EndDate)
+                .Select(x => x.Offer)
+                .ToList();
 
-            query = query
-                .Where(o => o.Location != null && o.Location.IsWithinDistance(userLocation, radiusMeters))
-                .OrderBy(o => o.EndDate);
-        }
-        else
-        {
-            query = query.OrderBy(o => o.EndDate);
+            offers = filteredOffers;
         }
 
-        var offers = await query
+        var result = offers
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new OfferResponse(
                 o.Id, o.BusinessId, o.Business.Name,
                 o.Title, o.Description, o.Category, o.Tags, o.ImageUrl,
                 o.OriginalPrice, o.DiscountedPrice, o.DiscountPercent,
-                o.Location != null ? o.Location.Y : null,
-                o.Location != null ? o.Location.X : null,
+                o.Latitude, o.Longitude,
                 o.StartDate, o.EndDate, o.ViewCount,
                 o.LikeCount, o.SaveCount, o.CreatedAt
             ))
-            .ToListAsync();
+            .ToList();
 
-        return Ok(offers);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -85,7 +89,7 @@ public class OffersController : ControllerBase
             o.Id, o.BusinessId, o.Business.Name,
             o.Title, o.Description, o.Category, o.Tags, o.ImageUrl,
             o.OriginalPrice, o.DiscountedPrice, o.DiscountPercent,
-            o.Location?.Y, o.Location?.X,
+            o.Latitude, o.Longitude,
             o.StartDate, o.EndDate, o.ViewCount,
             o.LikeCount, o.SaveCount, o.CreatedAt
         ));
@@ -97,7 +101,7 @@ public class OffersController : ControllerBase
         var offer = new Offer
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(), // TODO: get from auth
+            BusinessId = Guid.NewGuid(), // TODO: get from auth  
             Title = request.Title,
             Description = request.Description,
             Category = request.Category,
@@ -106,15 +110,11 @@ public class OffersController : ControllerBase
             OriginalPrice = request.OriginalPrice,
             DiscountedPrice = request.DiscountedPrice,
             DiscountPercent = request.DiscountPercent,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
             StartDate = request.StartDate,
             EndDate = request.EndDate
         };
-
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
-        {
-            offer.Location = _geometryFactory.CreatePoint(
-                new Coordinate(request.Longitude.Value, request.Latitude.Value));
-        }
 
         _db.Offers.Add(offer);
         await _db.SaveChangesAsync();
@@ -124,9 +124,21 @@ public class OffersController : ControllerBase
                 offer.Id, offer.BusinessId, "Business",
                 offer.Title, offer.Description, offer.Category, offer.Tags, offer.ImageUrl,
                 offer.OriginalPrice, offer.DiscountedPrice, offer.DiscountPercent,
-                offer.Location?.Y, offer.Location?.X,
+                offer.Latitude, offer.Longitude,
                 offer.StartDate, offer.EndDate, offer.ViewCount,
                 offer.LikeCount, offer.SaveCount, offer.CreatedAt
             ));
+    }
+
+    private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        var R = 6371; // Earth radius in km  
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
     }
 }
