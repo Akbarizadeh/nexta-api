@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nexa.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+547b6a3ec96a17e9f4088b84edd0d1cd17d6fedf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e5dd9f612303bd8ef3e1a34cea55b034e2f3f91c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nexa.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nexa.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

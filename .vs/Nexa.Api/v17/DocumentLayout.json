@@ -11,6 +11,10 @@
       "RelativeMoniker": "D:0:0:{C2FCEFDD-2B9F-4387-ABA2-D47EA445EC73}|Nexa.Api\\Nexa.Api.csproj|solutionrelative:nexa.api\\controllers\\aicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{C2FCEFDD-2B9F-4387-ABA2-D47EA445EC73}|Nexa.Api\\Nexa.Api.csproj|e:\\workspace-myself\\nexta-api-repot\\nexta-api\\nexa.api\\controllers\\businesscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C2FCEFDD-2B9F-4387-ABA2-D47EA445EC73}|Nexa.Api\\Nexa.Api.csproj|solutionrelative:nexa.api\\controllers\\businesscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{C2FCEFDD-2B9F-4387-ABA2-D47EA445EC73}|Nexa.Api\\Nexa.Api.csproj|e:\\workspace-myself\\nexta-api-repot\\nexta-api\\nexa.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{C2FCEFDD-2B9F-4387-ABA2-D47EA445EC73}|Nexa.Api\\Nexa.Api.csproj|solutionrelative:nexa.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     }
@@ -22,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,13 +46,26 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "BusinessController.cs",
+              "DocumentMoniker": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Controllers\\BusinessController.cs",
+              "RelativeDocumentMoniker": "Nexa.Api\\Controllers\\BusinessController.cs",
+              "ToolTip": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Controllers\\BusinessController.cs",
+              "RelativeToolTip": "Nexa.Api\\Controllers\\BusinessController.cs",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAAAFwAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-16T17:40:30.333Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
               "Title": "AiService.cs",
               "DocumentMoniker": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Services\\AiService.cs",
               "RelativeDocumentMoniker": "Nexa.Api\\Services\\AiService.cs",
               "ToolTip": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Services\\AiService.cs",
               "RelativeToolTip": "Nexa.Api\\Services\\AiService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAC+AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-16T17:27:14.991Z",
               "EditorCaption": ""
@@ -61,20 +78,20 @@
               "RelativeDocumentMoniker": "Nexa.Api\\Controllers\\AiController.cs",
               "ToolTip": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\Controllers\\AiController.cs",
               "RelativeToolTip": "Nexa.Api\\Controllers\\AiController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-16T17:27:04.229Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "appsettings.json",
               "DocumentMoniker": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\appsettings.json",
               "RelativeDocumentMoniker": "Nexa.Api\\appsettings.json",
-              "ToolTip": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\appsettings.json*",
-              "RelativeToolTip": "Nexa.Api\\appsettings.json*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAABAAAAAAAAAA==",
+              "ToolTip": "E:\\workspace-myself\\nexta-api-repot\\nexta-api\\Nexa.Api\\appsettings.json",
+              "RelativeToolTip": "Nexa.Api\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
               "WhenOpened": "2026-02-16T17:26:48.186Z",
               "EditorCaption": ""
