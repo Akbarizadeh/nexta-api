@@ -20,7 +20,8 @@ public class AiService : IAiService
     {
         _logger = logger;
         _configuration = configuration;
-        var apiKey = "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";// _configuration["OpenAI:ApiKey"];
+        var apiKey = _configuration["OPENAI_API_KEY"];
+        //var apiKey = "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";// _configuration["OpenAI:ApiKey"];
         _openAiClient = new OpenAIClient(apiKey);
         _db = db;
     }
